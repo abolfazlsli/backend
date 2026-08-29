@@ -109,6 +109,7 @@ class PartnerOutPublic (ResponceModel , ById) :
     phone : str
     role : Optional[RoleOut] = None
     creator : Optional[PartnerBaseicOut] = None
+    created_partners : Optional[List[PartnerBaseicOut]] = None
 
 class PartnerOut (ResponceModel) :
     name : str

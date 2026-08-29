@@ -9,6 +9,11 @@ class TypeOfEnum (str,Enum) :
     SELECT = "select"
     MULTISELECT = "multiselect"
 
+
+class StatusEnum (str , Enum) :
+    ACTIVE = "active"
+    DISACTIVE = "disactive"
+
 class Filds (ByCompanyAndCreator) :
     __tablename__ = "filds"
 
@@ -22,7 +27,7 @@ class Filds (ByCompanyAndCreator) :
                 nullable=False,
             )
     
-    
+    status = Column(ENUM(StatusEnum) , default=StatusEnum.ACTIVE , nullable=False)
     company = relationship("Company" , back_populates="filds")
     partner = relationship("Partner")
     instances = relationship("Instances", secondary="instancefilds", back_populates="filds")
@@ -64,8 +69,9 @@ class Instances (ByCompanyAndCreator) :
 
     name = Column(String , nullable=False)
     caption = Column(String)
-    order = Column(Integer, default=0)
-    required = Column(Boolean, default=False)
+    # order = Column(Integer, default=0)
+    # required = Column(Boolean, default=False)
+    status = Column(ENUM(StatusEnum) , default=StatusEnum.ACTIVE , nullable=False)
 
     company = relationship("Company" , back_populates="instances")
     partner = relationship("Partner")
