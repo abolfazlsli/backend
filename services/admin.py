@@ -10,7 +10,7 @@ async def createPremissionService (
 ) :
     premission = Premisions(
         name = data.name ,
-        code = data.code , 
+        code = data.code.strip() , 
         creator_id = admin.id
     )
     db.add(premission)
@@ -121,7 +121,7 @@ async def getRoles (
         user : Admin ,
         querySize : GetDataQuerySize
 ) :
-    roles = db.query(Role)
+    roles = db.query(Role).filter(not_(Role.id == 1))
     if isinstance(user , Partner) :
         roles = roles.filter(or_(Role.company_id == user.company_id , Role.company_id.is_(None)))
     return {
@@ -141,7 +141,7 @@ async def getPublicRoles(
 ):
     query = (
         db.query(Role)
-        .filter(Role.company_id.is_(None))
+        .filter(Role.company_id.is_(None) ,  not_(Role.id == 1))
     )
 
     total = query.count()
@@ -422,7 +422,7 @@ async def setRoleForPartner (
     partner = None
     if isinstance(user , Admin) :
         partner = db.query(Partner).filter(
-            Partner.public_id == data.partner_id ,
+            Partner.public_id == data.partner_id , not_(Partner.company_id == 1)
         ).one_or_none()
     elif isinstance(user , Partner) :
         partnercheck = db.query(Partner).filter(
@@ -463,7 +463,7 @@ async def getPartners (
        user : Union[Admin , Partner] ,
        querySize : GetDataQuerySize
 ) :
-    partners = db.query(Partner)
+    partners = db.query(Partner).filter(not_(Partner.company_id == 1))
     if isinstance(user , Partner) :
         partners = partners.filter(Partner.company_id == user.company_id)
     return {
@@ -571,7 +571,7 @@ async def getAllCompanys (
         admin : Admin , 
         querySize : GetDataQuerySize
 ) :
-    companys = db.query(Company)
+    companys = db.query(Company).filter(not_(Company.id == 1))
 
     return {
         "result" : companys

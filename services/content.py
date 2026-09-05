@@ -2,6 +2,7 @@ from core.packages.services import *
 from schema.content import *
 from database.content import *
 from core.utils.dataprocess import update_if_not_none
+from core.packages.database import generate_public_id
 
 
 async def createFilds (
@@ -371,6 +372,56 @@ async def unarchiveFilds (
     )
 
 
+
+async def archiveInstanceFilds (
+        db : Session ,
+        partner : Partner ,
+        id : str
+) :
+    instance_fild = db.query(InstanceFilds).filter(
+        InstanceFilds.id == id ,
+        InstanceFilds.status == StatusEnum.ACTIVE , 
+        InstanceFilds.company_id == partner.company_id ,
+    ).one_or_none()
+    if not instance_fild : 
+        return NotFoundRes(
+            {
+                "result" : "instance fild not found"
+            }
+        )
+    instance_fild.status = StatusEnum.DISACTIVE
+    db.commit()
+    return OkRes(
+        {
+            "result" : "Instance Fild archived"
+        }
+    )
+
+
+async def unarchiveInstanceFilds (
+        db : Session ,
+        partner : Partner ,
+        id : str
+) :
+    instance_fild = db.query(InstanceFilds).filter(
+        InstanceFilds.id == id ,
+        InstanceFilds.status == StatusEnum.DISACTIVE , 
+        InstanceFilds.company_id == partner.company_id ,
+    ).one_or_none()
+    if not instance_fild : 
+        return NotFoundRes(
+            {
+                "result" : "instance fild not found"
+            }
+        )
+    instance_fild.status = StatusEnum.ACTIVE
+    db.commit()
+    return OkRes(
+        {
+            "result" : "Instance Fild unarchiver"
+        }
+    )
+
 async def getFildById (
         db : Session , 
         partner : Partner , 
@@ -399,16 +450,29 @@ async def createEntry(
         partner : Partner , 
         data : CreateEntryDto
 ) : 
+    instance = db.query(Instances).filter(
+        Instances.public_id == data.instance_id ,
+        Instances.company_id == partner.company_id ,
+        Instances.status == StatusEnum.ACTIVE
+    ).one_or_none()
     entry = Entries(
-        instance_id = data.instance_id ,
+        instance_id = instance.id ,
         company_id = partner.company_id ,
         creator_id = partner.id
     )
     db.add(entry)
+    if data.entry_type :
+        entry.entry_type = data.entry_type
+    if data.price and data.entry_type == "paid" :
+        entry.price = data.price
+        entry.acsess_id = generate_public_id()
     db.commit()
     return OkRes(
         {
-            "result" : "entry added"
+            "result" : {
+                "message" : "entry added" ,
+                "entry_id" : entry.public_id
+            }
         }
     )
 
@@ -431,7 +495,8 @@ async def getInstanceFilds (
         )
     instance_filds = db.query(InstanceFilds).filter(
         InstanceFilds.company_id == partner.company_id ,
-        InstanceFilds.instance_id == instance.id
+        InstanceFilds.instance_id == instance.id , 
+        InstanceFilds.status == StatusEnum.ACTIVE
     ).all()
     return {
         "result" : {
@@ -444,6 +509,46 @@ async def getInstanceFilds (
         }
     }
 
+
+
+
+async def getEntrys (
+        db : Session ,
+        partner : Partner ,
+        querySize : GetDataQuerySize
+) :
+    entrys = db.query(Entries).filter(
+        Entries.company_id == partner.company_id ,
+        Entries.creator_id == partner.id ,
+        or_(Entries.status == StatusEnum.PENDDING , Entries.status == StatusEnum.ACTIVE)
+    )
+    return {
+        "result" : entrys
+        .offset(querySize.offset)
+        .limit(querySize.size)
+        .all() ,
+        "total" : entrys.count()
+    }
+
+async def getEntryFilds (
+        db : Session , 
+        partner : Partner ,
+        entry_id : str
+) :
+    entry = db.query(Entries).filter(
+        Entries.company_id == partner.company_id ,
+        Entries.creator_id == partner.id ,
+        Entries.status == StatusEnum.ACTIVE ,
+        Entries.public_id == entry_id
+    ).one_or_none()
+    if not entry :
+        return NotFoundRes(
+            {
+                "result" : "cant find data"
+            }
+        )
+    
+    return
 
 
 

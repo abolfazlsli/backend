@@ -49,6 +49,9 @@ class EditInstanceDto (BaseModel) :
 
 class CreateEntryDto (BaseModel) :
     instance_id : str
+    price : Optional[int] = 0
+    entry_type : Optional[str] = "free"
+
 
 
 # responce --------------------------
@@ -116,3 +119,13 @@ class SingleInstanceFildsRes (ResponceModel) :
 
 class SingleInstanceFildsOut (ResponceModel) :
     result : SingleInstanceFildsRes 
+
+
+class EntryOut(ResponceModel) :
+    status : str
+    instance : SingleInstanceOut
+
+
+class EntryRes (ResponceModel) :
+    result : List[EntryOut] = []
+    total : int = 0

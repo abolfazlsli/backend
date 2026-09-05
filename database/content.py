@@ -13,6 +13,14 @@ class TypeOfEnum (str,Enum) :
 class StatusEnum (str , Enum) :
     ACTIVE = "active"
     DISACTIVE = "disactive"
+    PENDDING = "pendding"
+
+
+
+class PricingEnum (str , Enum) :
+    FREE = "free"
+    FREE_USERS = "free_users"
+    PRICING = "paid"
 
 class Filds (ByCompanyAndCreator) :
     __tablename__ = "filds"
@@ -27,7 +35,7 @@ class Filds (ByCompanyAndCreator) :
                 nullable=False,
             )
     
-    status = Column(ENUM(StatusEnum) , default=StatusEnum.ACTIVE , nullable=False)
+    status = Column(String , default=StatusEnum.ACTIVE , nullable=False)
     company = relationship("Company" , back_populates="filds")
     partner = relationship("Partner")
     instances = relationship("Instances", secondary="instancefilds", back_populates="filds")
@@ -56,6 +64,7 @@ class InstanceFilds (ByCompanyAndCreator) :
     fild_id = Column(Integer , ForeignKey('filds.id') , nullable=False)
     order = Column(Integer, default=0)
     required = Column(Boolean, default=False) 
+    status = Column(String , nullable=False , default=StatusEnum.ACTIVE)
 
     instance = relationship("Instances", back_populates="instance_filds")
     fild = relationship("Filds")
@@ -71,7 +80,7 @@ class Instances (ByCompanyAndCreator) :
     caption = Column(String)
     # order = Column(Integer, default=0)
     # required = Column(Boolean, default=False)
-    status = Column(ENUM(StatusEnum) , default=StatusEnum.ACTIVE , nullable=False)
+    status = Column(String , default=StatusEnum.ACTIVE , nullable=False)
 
     company = relationship("Company" , back_populates="instances")
     partner = relationship("Partner")
@@ -94,12 +103,25 @@ class EntryDataOptions(ByCompanyAndCreator):
 class Entries(ByCompanyAndCreator):
     __tablename__ = "entries"
     instance_id = Column(Integer, ForeignKey("instances.id"), nullable=False) 
+    status = Column(String , nullable=False , default=StatusEnum.PENDDING)
+    entry_type = Column(String , nullable=False , default=PricingEnum.FREE)
+    price = Column(BigInteger , nullable=True , index=True)
+    acsess_id = Column(String , nullable=True)
 
     instance = relationship("Instances")
     company = relationship("Company", back_populates="entries")
     creator = relationship("Partner")
     data = relationship("EntryData", back_populates="entry")
 
+
+
+class PartnerAcsessKeys (ByCompanyAndCreator) :
+    __tablename__ = "partners_keys"
+    entry_acsess_id = Column(String , nullable=False)
+    entry_id = Column(Integer , ForeignKey("entries.id") , nullable=False)
+
+    entry = relationship("Entries")
+    partner = relationship("Partner" , back_populates="acsess_keys")
 
 class EntryData(ByCompanyAndCreator):
     __tablename__ = "entry_data"

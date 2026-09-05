@@ -58,6 +58,8 @@ class Partner (BasicTabales , ContactInfoMixin) :
         order_by="PartnerBanLog.id.desc()",
     )
 
+    acsess_keys = relationship("PartnerAcsessKeys" , back_populates="partner")
+
 
 class PartnerBanLog(BasicTabales):
     __tablename__ = "partner_ban_logs"

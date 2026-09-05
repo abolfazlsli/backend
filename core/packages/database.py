@@ -1,7 +1,7 @@
 from core.settings import settings
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker , DeclarativeBase  , relationship , declared_attr , Session
-from sqlalchemy import Column , Integer , String , DateTime , Boolean , Text , func ,ForeignKey , and_ , or_ , UniqueConstraint , Enum as SAEnum
+from sqlalchemy import Column , Integer , String , DateTime , Boolean , Text , func ,ForeignKey , and_ , or_ , not_ , UniqueConstraint , BigInteger , Enum as SAEnum
 from sqlalchemy.dialects.postgresql import ENUM
 import uuid
 from enum import Enum
@@ -37,3 +37,5 @@ class ByCompanyAndCreator (BasicTabales) :
     __abstract__ = True
     company_id = Column(Integer , ForeignKey("companys.id") , nullable=False)
     creator_id = Column(Integer , ForeignKey("partners.id") , nullable=False)
+
+

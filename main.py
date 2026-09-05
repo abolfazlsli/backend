@@ -4,6 +4,8 @@ from core.settings import settings
 from routes.admin import admin_router
 from routes.auth import auth_router
 from routes.content import content_router
+from routes.users import users_router
+
 
 app = FastAPI(
     docs_url=settings.setting.docs_url ,
@@ -54,6 +56,6 @@ async def healthCheck () :
 
 app.include_router(router=admin_router)
 app.include_router(router=content_router)
-
+app.include_router(router=users_router)
 
 app.include_router(router=auth_router)

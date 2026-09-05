@@ -149,6 +149,16 @@ async def unarchive_instance (
 ) :
     return await unarchiveInstance(db , partner , id)
 
+
+@content_router.put("/instance/unarchiveFilds/{instance_fildid}" , tags=[tags.istance])
+async def unarchive_fild_instance (
+    db : Annotated[Session , Depends(get_db)] ,
+    partner : Annotated[Partner , Depends(require_partner_permission("instance.edit"))] ,
+    instance_fildid : str
+) :
+    return await unarchiveInstanceFilds(db , partner , instance_fildid)
+
+
 @content_router.delete("/instance/archive/{id}" , tags=[tags.istance])
 async def archive_instance (
     db : Annotated[Session , Depends(get_db)] ,
@@ -156,6 +166,15 @@ async def archive_instance (
     id : str
 ) :
     return await archiveInstance(db , partner , id)
+
+
+@content_router.delete("/instance/archiveFilds/{instance_fildid}" , tags=[tags.istance])
+async def archive_fild_instance (
+    db : Annotated[Session , Depends(get_db)] ,
+    partner : Annotated[Partner , Depends(require_partner_permission("instance.edit"))] ,
+    instance_fildid : str
+) :
+    return await archiveInstanceFilds(db , partner , instance_fildid)
 
 # @content_router.get("/instance/{id}" , tags=[tags.istance])
 # async def get_instance_by_id (
@@ -176,12 +195,20 @@ async def create_entry (
 ) :
     return await createEntry(db , partner , data)
 
-@content_router.get("/entry" , tags=[tags.entries])
+@content_router.get("/entry" , tags=[tags.entries] , response_model=EntryRes)
 async def get_entrys(
     db : Annotated[Session , Depends(get_db)] ,
     partner : Annotated[Partner , Depends(require_partner_permission("entry.get"))] ,
     querySize : Annotated[GetDataQuerySize , Query()]
 ) :
-    return await getInstanceFilds(db , partner , querySize)
+    return await getEntrys(db , partner , querySize)
 
 
+
+@content_router.get("/entry/filds/{entry_id}" , tags=[tags.entries])
+async def get_entry_filds(
+    db : Annotated[Session , Depends(get_db)] ,
+    partner : Annotated[Partner , Depends(require_partner_permission("entry.get"))] ,
+    entry_id : str
+) :
+    return await getEntryFilds(db , partner , entry_id)

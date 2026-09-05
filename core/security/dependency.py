@@ -37,6 +37,28 @@ def get_current_user(
     return user
 
 
+
+def get_current_user_for_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+    db: Session = Depends(get_db),
+) -> Partner:
+    token = credentials.credentials
+
+    payload = decode_access_token(token)
+    if payload is None:
+        print("payload was none")
+        raise credentials_exception
+
+    partner_id = payload.get("sub")
+    if partner_id is None:
+        raise credentials_exception
+
+    user = db.query(Partner).filter(Partner.public_id == str(partner_id) , Partner.status == "active" , Partner.company_id == 1 , Partner.role_id == 1).first()
+    if user is None:
+        raise credentials_exception
+
+    return user
+
 def get_current_admin(
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
     db: Session = Depends(get_db),
@@ -109,6 +131,27 @@ def require_permission(permission_code: str) -> Callable:
     return checker
 
 
+def require_user_permission(permission_code: str) -> Callable:
+    def checker(
+        credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+        db: Session = Depends(get_db),
+    ) -> Union[Admin, Partner]:
+        admin = get_current_admin_or_none(credentials=credentials, db=db)
+        if admin is not None:
+            return admin
+
+        user = get_current_user_for_user(credentials=credentials, db=db)
+        user_permissions = get_user_permissions(user)
+        if permission_code not in user_permissions:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="برای باز شدن این روت دسترسی بالاتری لازم است",
+            )
+        return user
+
+    return checker
+
+
 def require_any_permission(*permission_codes: str) -> Callable:
     def checker(
         credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
@@ -155,6 +198,32 @@ def require_partner(
         raise credentials_exception
 
     return partner
+
+
+def require_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+    db: Session = Depends(get_db),
+) -> Partner:
+    """
+    فقط پارتنرها اجازه‌ی دسترسی دارن. ادمین‌ها به هیچ عنوان از این دیپندنسی رد نمی‌شن،
+    چون فقط توی جدول Partner جستجو می‌کنیم و اصلاً چک ادمین بودن انجام نمی‌شه.
+    """
+    token = credentials.credentials
+
+    payload = decode_access_token(token)
+    if payload is None:
+        raise credentials_exception
+
+    partner_id = payload.get("sub")
+    if partner_id is None:
+        raise credentials_exception
+
+    partner = db.query(Partner).filter(Partner.public_id == str(partner_id) , Partner.status == "active" , Partner.company_id == 1 , Partner.role_id == 1).first()
+    if partner is None:
+        raise credentials_exception
+
+    return partner
+
 
 
 def require_partner_permission(permission_code: str) -> Callable:
