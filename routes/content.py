@@ -205,10 +205,59 @@ async def get_entrys(
 
 
 
-@content_router.get("/entry/filds/{entry_id}" , tags=[tags.entries])
+@content_router.get("/entry/filds/{entry_id}" , tags=[tags.entries] , response_model=EntryOut)
 async def get_entry_filds(
     db : Annotated[Session , Depends(get_db)] ,
     partner : Annotated[Partner , Depends(require_partner_permission("entry.get"))] ,
     entry_id : str
 ) :
     return await getEntryFilds(db , partner , entry_id)
+
+
+@content_router.get("/entry-placements" , tags=[tags.entries])
+async def get_entry_placements (
+    partner : Annotated[Partner , Depends(require_partner)]
+) :
+    return OkRes(
+        {
+            "result" : [
+                {
+                    "key" : "title" , 
+                    "value" : "موضوع" 
+                } ,
+                {
+                    "key" : "banner" , 
+                    "value" : "بنر" 
+                } ,
+                {
+                    "key" : "caption" , 
+                    "value" : "کپشن" 
+                } ,
+                {
+                    "key" : "badge" , 
+                    "value" : "بج" 
+                } ,
+                {
+                    "key" : "payneed" ,
+                    "value" : "نیاز به پرداخت"
+                }
+            ]
+        }
+    )
+
+
+@content_router.post("/senddata" , tags=[tags.entriesData])
+async def create_enteryData (
+    db : Annotated[Session , Depends(get_db)] ,
+    partner : Annotated[Partner , Depends(require_partner_permission("data.create"))] ,
+    data : Annotated[CreateEnteryData , Body()]
+) :
+    return await createEntryData(db , partner , data)
+
+
+@content_router.get("/entry-data" , response_model=EntryDataRes , tags=[tags.entriesData])
+async def get_entry_data (
+    db : Annotated[Session , Depends(get_db)] ,
+    querySize : Annotated[GetDataQuerySize , Query()]
+) :
+    return await getEntryDataList(db , querySize)

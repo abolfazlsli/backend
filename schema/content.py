@@ -51,10 +51,28 @@ class CreateEntryDto (BaseModel) :
     instance_id : str
     price : Optional[int] = 0
     entry_type : Optional[str] = "free"
+    categorys : Optional[str] = None
 
 
+
+class EntryDataHolderDto (BaseModel) :
+    value : str | int | bool | list[str]
+    placement : str
+
+
+class EntryDataDto (BaseModel) :
+    fild_id : str
+    data : EntryDataHolderDto
+
+
+class CreateEnteryData (BaseModel) :
+    entry_id : str
+    filds : List[EntryDataDto]
 
 # responce --------------------------
+
+
+
 
 
 class OptionsOut (ResponceModel) :
@@ -82,7 +100,7 @@ class FildsResponce(ResponceModel) :
     total : int = 0
 
 
-class InstanceFildsOut (ResponceModel , ById) :
+class InstanceFildsOut (ResponceModel) :
     order : int
     required : bool
 
@@ -101,6 +119,7 @@ class SingleInstanceOut (ResponceModel , ById) :
     caption : str
 
     instance_filds : List[InstanceFildsOut] = []
+
 
 class InstanceResponce (ResponceModel) :
     result : List[InstanceOut] = [] 
@@ -121,11 +140,26 @@ class SingleInstanceFildsOut (ResponceModel) :
     result : SingleInstanceFildsRes 
 
 
-class EntryOut(ResponceModel) :
+class EntryOut(ResponceModel , ById) :
     status : str
+    entry_type : str
+    price : Optional[int] = None
     instance : SingleInstanceOut
 
 
 class EntryRes (ResponceModel) :
     result : List[EntryOut] = []
     total : int = 0
+
+
+class EntryDataOut (ResponceModel) :
+    placement : str
+    value : Any
+    fild : FildOutPublic
+    entry : EntryOut
+
+
+
+class EntryDataRes (ResponceModel) :
+    result : List[EntryDataOut] = [] 
+    total : int

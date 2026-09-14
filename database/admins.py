@@ -39,7 +39,7 @@ class Partner (BasicTabales , ContactInfoMixin) :
     creator_id = Column(Integer, ForeignKey("partners.id"), nullable=True)
     role_id = Column(Integer , ForeignKey("roles.id"))
     company_id = Column(Integer , ForeignKey("companys.id") , nullable=False)
-
+    
     comany = relationship("Company" , back_populates="members")
     creator = relationship(
         "Partner",
@@ -58,7 +58,11 @@ class Partner (BasicTabales , ContactInfoMixin) :
         order_by="PartnerBanLog.id.desc()",
     )
 
+    saved_entries = relationship(
+        "Entries" , secondary="saves" , back_populates="saved_by"
+    )
     acsess_keys = relationship("PartnerAcsessKeys" , back_populates="partner")
+    categorys = relationship("Category" , secondary="partner_category_lockd")
 
 
 class PartnerBanLog(BasicTabales):

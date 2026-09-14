@@ -108,10 +108,14 @@ class Entries(ByCompanyAndCreator):
     price = Column(BigInteger , nullable=True , index=True)
     acsess_id = Column(String , nullable=True)
 
+    like_count = Column(Integer , nullable=True , default=0)
+
     instance = relationship("Instances")
     company = relationship("Company", back_populates="entries")
     creator = relationship("Partner")
     data = relationship("EntryData", back_populates="entry")
+    categorys = relationship("Category" , secondary="entry_category")
+    saved_by = relationship("Partner" , secondary="saves" , back_populates="saved_entries")
 
 
 
@@ -127,15 +131,15 @@ class EntryData(ByCompanyAndCreator):
     __tablename__ = "entry_data"
     entry_id = Column(Integer, ForeignKey("entries.id"), nullable=False)
     fild_id = Column(Integer, ForeignKey("filds.id"), nullable=False)
-
+    placement = Column(String , nullable=False)
     value_str = Column(String, nullable=True)
     value_int = Column(Integer, nullable=True)
     value_bool = Column(Boolean, nullable=True)
-    value_file_id = Column(Integer, ForeignKey("file_manager.id"), nullable=True)
+    # value_file_id = Column(Integer, ForeignKey("file_manager.id"), nullable=True)
 
     entry = relationship("Entries", back_populates="data")
     fild = relationship("Filds")
-    file = relationship("FileManager")
+    file = relationship("FileManager" , back_populates="entry_data" , uselist=False)
     selected_options = relationship("FildOptions", secondary="entry_data_options")
     __table_args__ = (UniqueConstraint("entry_id", "fild_id", name="uq_entry_fild"),)
 

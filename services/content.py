@@ -1,8 +1,9 @@
 from core.packages.services import *
 from schema.content import *
 from database.content import *
-from core.utils.dataprocess import update_if_not_none
+from core.utils.dataprocess import update_if_not_none ,validate_entry_value
 from core.packages.database import generate_public_id
+from database.category import *
 
 
 async def createFilds (
@@ -460,6 +461,11 @@ async def createEntry(
         company_id = partner.company_id ,
         creator_id = partner.id
     )
+    if data.categorys :
+        categorys = db.query(Category).filter(
+            Category.public_id.in_(data.categorys)
+        ).all()
+        entry.categorys.extend(categorys)
     db.add(entry)
     if data.entry_type :
         entry.entry_type = data.entry_type
@@ -538,7 +544,7 @@ async def getEntryFilds (
     entry = db.query(Entries).filter(
         Entries.company_id == partner.company_id ,
         Entries.creator_id == partner.id ,
-        Entries.status == StatusEnum.ACTIVE ,
+        not_(Entries.status == StatusEnum.DISACTIVE) ,
         Entries.public_id == entry_id
     ).one_or_none()
     if not entry :
@@ -548,7 +554,7 @@ async def getEntryFilds (
             }
         )
     
-    return
+    return entry
 
 
 
@@ -573,3 +579,245 @@ async def getEntryFilds (
 #             "result" : SingleInstanceOut.model_validate(instance).model_dump()
 #         }
 #     )
+
+
+
+async def createEntryData(
+    db: Session,
+    partner: Partner,
+    data: CreateEnteryData
+):
+    # ---------------------------------
+    # Get Entry
+    # ---------------------------------
+
+    entry = (
+        db.query(Entries)
+        .filter(
+            Entries.public_id == data.entry_id,
+            Entries.company_id == partner.company_id,
+        )
+        .one_or_none()
+    )
+
+    if not entry:
+        return NotFoundRes({
+            "result": "no entry found"
+        })
+
+    errors = []
+
+    # ---------------------------------
+    # Get all fields in one query
+    # ---------------------------------
+
+    field_ids = [item.fild_id for item in data.filds]
+
+    fields = (
+        db.query(Filds)
+        .filter(
+            Filds.public_id.in_(field_ids),
+            Filds.company_id == partner.company_id,
+        )
+        .all()
+    )
+
+    fields_map = {
+        field.public_id: field
+        for field in fields
+    }
+
+    # ---------------------------------
+    # Validate fields
+    # ---------------------------------
+
+    for item in data.filds:
+
+        field = fields_map.get(item.fild_id)
+
+        if not field:
+            errors.append({
+                "fild_id": item.fild_id,
+                "result": "field invalid, not found"
+            })
+            continue
+
+        value = item.data.value
+
+        # -----------------------------
+        # Validate value
+        # -----------------------------
+
+        is_valid, error = validate_entry_value(
+            field.type_of,
+            value
+        )
+
+        if not is_valid:
+            errors.append({
+                "fild_id": item.fild_id,
+                "result": error
+            })
+            continue
+
+        # -----------------------------
+        # Create EntryData
+        # -----------------------------
+
+        entrydata = EntryData(
+            company_id=partner.company_id,
+            creator_id=partner.id,
+            fild_id=field.id,
+            entry_id=entry.id,
+            placement=item.data.placement,
+        )
+
+        # -----------------------------
+        # Set primitive values
+        # -----------------------------
+
+        if field.type_of == TypeOfEnum.STR:
+
+            entrydata.value_str = value
+
+        elif field.type_of == TypeOfEnum.INT:
+
+            entrydata.value_int = value
+
+        elif field.type_of == TypeOfEnum.BOOL:
+
+            entrydata.value_bool = value
+
+        # -----------------------------
+        # FILE
+        # -----------------------------
+
+        elif field.type_of == TypeOfEnum.FILE:
+
+            file = (
+                db.query(FileManager)
+                .filter(
+                    FileManager.public_id == value,
+                )
+                .one_or_none()
+            )
+
+            if not file:
+                errors.append({
+                    "fild_id": item.fild_id,
+                    "result": "file not found"
+                })
+                continue
+
+            entrydata.file = file
+
+        # -----------------------------
+        # SELECT
+        # -----------------------------
+
+        elif field.type_of == TypeOfEnum.SELECT:
+
+            option = (
+                db.query(FildOptions)
+                .filter(
+                    FildOptions.public_id == value,
+                    FildOptions.fild_id == field.id,
+                    FildOptions.company_id == partner.company_id,
+                    FildOptions.is_active.is_(True),
+                )
+                .one_or_none()
+            )
+
+            if not option:
+                errors.append({
+                    "fild_id": item.fild_id,
+                    "result": "invalid option"
+                })
+                continue
+
+            entrydata.selected_options.append(option)
+
+        # -----------------------------
+        # MULTISELECT
+        # -----------------------------
+
+        elif field.type_of == TypeOfEnum.MULTISELECT:
+
+            options = (
+                db.query(FildOptions)
+                .filter(
+                    FildOptions.public_id.in_(value),
+                    FildOptions.fild_id == field.id,
+                    FildOptions.company_id == partner.company_id,
+                    FildOptions.is_active.is_(True),
+                )
+                .all()
+            )
+
+            if len(options) != len(set(value)):
+                errors.append({
+                    "fild_id": item.fild_id,
+                    "result": "one or more options are invalid"
+                })
+                continue
+
+            entrydata.selected_options.extend(options)
+
+        else:
+
+            errors.append({
+                "fild_id": item.fild_id,
+                "result": "type is not valid"
+            })
+            continue
+
+        db.add(entrydata)
+
+    # ---------------------------------
+    # Rollback if validation failed
+    # ---------------------------------
+
+    if errors:
+        db.rollback()
+
+        return {
+            "result": "validation error",
+            "errors": errors
+        }
+
+    # ---------------------------------
+    # Commit
+    # ---------------------------------
+
+    try:
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "result": "success"
+    }
+
+async def getEntryDataList(
+    db: Session,
+    querySize: GetDataQuerySize
+):
+    query = db.query(EntryData)
+
+    total = query.with_entities(
+        func.count(EntryData.id)
+    ).scalar()
+
+    items = (
+        query
+        .limit(querySize.size)
+        .offset(querySize.offset)
+        .all()
+    )
+
+    return {
+        "result": items,
+        "total": total,
+    }
