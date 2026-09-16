@@ -1,8 +1,8 @@
-"""setup users
+"""new setup
 
-Revision ID: fd6f90810848
+Revision ID: 70f7a2fba387
 Revises: 
-Create Date: 2026-09-03 06:36:53.467062
+Create Date: 2026-09-15 08:46:34.580469
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'fd6f90810848'
+revision: str = '70f7a2fba387'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -36,14 +36,37 @@ def upgrade() -> None:
     sa.UniqueConstraint('username')
     )
     op.create_index(op.f('ix_admins_id'), 'admins', ['id'], unique=False)
-    op.create_table('file_manager',
+    op.create_table('group_category',
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('caption', sa.String(), nullable=True),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('public_id', sa.String(), nullable=False),
     sa.Column('create_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('public_id')
     )
-    op.create_index(op.f('ix_file_manager_id'), 'file_manager', ['id'], unique=False)
+    op.create_index(op.f('ix_group_category_id'), 'group_category', ['id'], unique=False)
+    op.create_table('tags',
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('public_id', sa.String(), nullable=False),
+    sa.Column('create_at', sa.DateTime(), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('public_id')
+    )
+    op.create_index(op.f('ix_tags_id'), 'tags', ['id'], unique=False)
+    op.create_table('categories',
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('caption', sa.String(), nullable=True),
+    sa.Column('group_id', sa.Integer(), nullable=True),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('public_id', sa.String(), nullable=False),
+    sa.Column('create_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['group_id'], ['group_category.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('public_id')
+    )
+    op.create_index(op.f('ix_categories_id'), 'categories', ['id'], unique=False)
     op.create_table('companys',
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('addres', sa.String(), nullable=False),
@@ -164,12 +187,20 @@ def upgrade() -> None:
     sa.UniqueConstraint('public_id')
     )
     op.create_index(op.f('ix_partner_ban_logs_id'), 'partner_ban_logs', ['id'], unique=False)
+    op.create_table('partner_category_lockd',
+    sa.Column('partner_id', sa.Integer(), nullable=False),
+    sa.Column('category_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
+    sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
+    sa.PrimaryKeyConstraint('partner_id', 'category_id')
+    )
     op.create_table('entries',
     sa.Column('instance_id', sa.Integer(), nullable=False),
     sa.Column('status', sa.String(), nullable=False),
     sa.Column('entry_type', sa.String(), nullable=False),
     sa.Column('price', sa.BigInteger(), nullable=True),
     sa.Column('acsess_id', sa.String(), nullable=True),
+    sa.Column('like_count', sa.Integer(), nullable=True),
     sa.Column('company_id', sa.Integer(), nullable=False),
     sa.Column('creator_id', sa.Integer(), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
@@ -222,13 +253,20 @@ def upgrade() -> None:
     sa.UniqueConstraint('public_id')
     )
     op.create_index(op.f('ix_instancefilds_id'), 'instancefilds', ['id'], unique=False)
+    op.create_table('entry_category',
+    sa.Column('category_id', sa.Integer(), nullable=False),
+    sa.Column('entry_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
+    sa.ForeignKeyConstraint(['entry_id'], ['entries.id'], ),
+    sa.PrimaryKeyConstraint('category_id', 'entry_id')
+    )
     op.create_table('entry_data',
     sa.Column('entry_id', sa.Integer(), nullable=False),
     sa.Column('fild_id', sa.Integer(), nullable=False),
+    sa.Column('placement', sa.String(), nullable=False),
     sa.Column('value_str', sa.String(), nullable=True),
     sa.Column('value_int', sa.Integer(), nullable=True),
     sa.Column('value_bool', sa.Boolean(), nullable=True),
-    sa.Column('value_file_id', sa.Integer(), nullable=True),
     sa.Column('company_id', sa.Integer(), nullable=False),
     sa.Column('creator_id', sa.Integer(), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
@@ -238,15 +276,26 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['creator_id'], ['partners.id'], ),
     sa.ForeignKeyConstraint(['entry_id'], ['entries.id'], ),
     sa.ForeignKeyConstraint(['fild_id'], ['filds.id'], ),
-    sa.ForeignKeyConstraint(['value_file_id'], ['file_manager.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('entry_id', 'fild_id', name='uq_entry_fild'),
     sa.UniqueConstraint('public_id')
     )
     op.create_index(op.f('ix_entry_data_id'), 'entry_data', ['id'], unique=False)
+    op.create_table('entry_likes',
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('entry_id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('public_id', sa.String(), nullable=False),
+    sa.Column('create_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['entry_id'], ['entries.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['partners.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('public_id'),
+    sa.UniqueConstraint('user_id', 'entry_id', name='uq_user_entry_like')
+    )
+    op.create_index(op.f('ix_entry_likes_id'), 'entry_likes', ['id'], unique=False)
     op.create_table('partners_keys',
     sa.Column('entry_acsess_id', sa.String(), nullable=False),
-    sa.Column('partner_id', sa.Integer(), nullable=False),
     sa.Column('entry_id', sa.Integer(), nullable=False),
     sa.Column('company_id', sa.Integer(), nullable=False),
     sa.Column('creator_id', sa.Integer(), nullable=False),
@@ -256,11 +305,30 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['company_id'], ['companys.id'], ),
     sa.ForeignKeyConstraint(['creator_id'], ['partners.id'], ),
     sa.ForeignKeyConstraint(['entry_id'], ['entries.id'], ),
-    sa.ForeignKeyConstraint(['partner_id'], ['partners.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('public_id')
     )
     op.create_index(op.f('ix_partners_keys_id'), 'partners_keys', ['id'], unique=False)
+    op.create_table('saves',
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('entry_id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('public_id', sa.String(), nullable=False),
+    sa.Column('create_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['entry_id'], ['entries.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['partners.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('public_id'),
+    sa.UniqueConstraint('user_id', 'entry_id', name='uq_user_entry_save')
+    )
+    op.create_index(op.f('ix_saves_id'), 'saves', ['id'], unique=False)
+    op.create_table('tags_entry',
+    sa.Column('tag_id', sa.Integer(), nullable=False),
+    sa.Column('entry_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['entry_id'], ['entries.id'], ),
+    sa.ForeignKeyConstraint(['tag_id'], ['tags.id'], ),
+    sa.PrimaryKeyConstraint('tag_id', 'entry_id')
+    )
     op.create_table('entry_data_options',
     sa.Column('entry_data_id', sa.Integer(), nullable=False),
     sa.Column('fild_option_id', sa.Integer(), nullable=False),
@@ -278,18 +346,39 @@ def upgrade() -> None:
     sa.UniqueConstraint('public_id')
     )
     op.create_index(op.f('ix_entry_data_options_id'), 'entry_data_options', ['id'], unique=False)
+    op.create_table('file_manager',
+    sa.Column('file_name', sa.String(), nullable=False),
+    sa.Column('digital_name', sa.String(), nullable=False),
+    sa.Column('mimetype', sa.String(), nullable=False),
+    sa.Column('entry_data_id', sa.Integer(), nullable=True),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('public_id', sa.String(), nullable=False),
+    sa.Column('create_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['entry_data_id'], ['entry_data.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('public_id')
+    )
+    op.create_index(op.f('ix_file_manager_id'), 'file_manager', ['id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_file_manager_id'), table_name='file_manager')
+    op.drop_table('file_manager')
     op.drop_index(op.f('ix_entry_data_options_id'), table_name='entry_data_options')
     op.drop_table('entry_data_options')
+    op.drop_table('tags_entry')
+    op.drop_index(op.f('ix_saves_id'), table_name='saves')
+    op.drop_table('saves')
     op.drop_index(op.f('ix_partners_keys_id'), table_name='partners_keys')
     op.drop_table('partners_keys')
+    op.drop_index(op.f('ix_entry_likes_id'), table_name='entry_likes')
+    op.drop_table('entry_likes')
     op.drop_index(op.f('ix_entry_data_id'), table_name='entry_data')
     op.drop_table('entry_data')
+    op.drop_table('entry_category')
     op.drop_index(op.f('ix_instancefilds_id'), table_name='instancefilds')
     op.drop_table('instancefilds')
     op.drop_index(op.f('ix_fild_options_id'), table_name='fild_options')
@@ -297,6 +386,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_entries_price'), table_name='entries')
     op.drop_index(op.f('ix_entries_id'), table_name='entries')
     op.drop_table('entries')
+    op.drop_table('partner_category_lockd')
     op.drop_index(op.f('ix_partner_ban_logs_id'), table_name='partner_ban_logs')
     op.drop_table('partner_ban_logs')
     op.drop_index(op.f('ix_instances_id'), table_name='instances')
@@ -314,8 +404,12 @@ def downgrade() -> None:
     op.drop_table('premisions')
     op.drop_index(op.f('ix_companys_id'), table_name='companys')
     op.drop_table('companys')
-    op.drop_index(op.f('ix_file_manager_id'), table_name='file_manager')
-    op.drop_table('file_manager')
+    op.drop_index(op.f('ix_categories_id'), table_name='categories')
+    op.drop_table('categories')
+    op.drop_index(op.f('ix_tags_id'), table_name='tags')
+    op.drop_table('tags')
+    op.drop_index(op.f('ix_group_category_id'), table_name='group_category')
+    op.drop_table('group_category')
     op.drop_index(op.f('ix_admins_id'), table_name='admins')
     op.drop_table('admins')
     # ### end Alembic commands ###

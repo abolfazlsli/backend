@@ -51,7 +51,7 @@ class CreateEntryDto (BaseModel) :
     instance_id : str
     price : Optional[int] = 0
     entry_type : Optional[str] = "free"
-    categorys : Optional[str] = None
+    categorys : Optional[List[str]] = None
 
 
 
@@ -140,11 +140,26 @@ class SingleInstanceFildsOut (ResponceModel) :
     result : SingleInstanceFildsRes 
 
 
+class CategoryDto (ResponceModel , ById) :
+    name : str
+
+
 class EntryOut(ResponceModel , ById) :
     status : str
     entry_type : str
     price : Optional[int] = None
     instance : SingleInstanceOut
+    categorys : List[CategoryDto]
+    data : List["EntryDataOut"]
+
+
+
+class EntryOutWithOutInstance(ResponceModel , ById) :
+    status : str
+    entry_type : str
+    price : Optional[int] = None
+    categorys : List[CategoryDto]
+    data : List["EntryDataOut"]
 
 
 class EntryRes (ResponceModel) :

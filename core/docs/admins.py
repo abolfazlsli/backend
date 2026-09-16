@@ -1,4 +1,4 @@
-class Tags :
+class TagsDocs :
     premisions = "admins - permissions"
     roles = "admins - roles"
     partners = 'admins - partners'

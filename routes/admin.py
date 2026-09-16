@@ -9,7 +9,7 @@ admin_router = APIRouter(
     prefix="/admin" ,
 )
 
-tags = admins.Tags()
+tags = admins.TagsDocs()
 
 @admin_router.post("/permissions" , tags=[tags.premisions])
 async def create_premision (

@@ -44,6 +44,6 @@ class SaveEntry (BasicTabales) :
             UniqueConstraint(
                 "user_id",
                 "entry_id",
-                name="uq_user_entry_like"
+                name="uq_user_entry_save"
             ),
         )

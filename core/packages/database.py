@@ -1,7 +1,7 @@
 from core.settings import settings
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker , DeclarativeBase  , relationship , declared_attr , Session
-from sqlalchemy import Column , Integer , String , DateTime , Boolean , Text , func ,ForeignKey , and_ , or_ , not_ , UniqueConstraint , BigInteger , Enum as SAEnum
+from sqlalchemy import Column , Integer , String , DateTime , Boolean , Text , func ,ForeignKey , and_ , or_ , not_ , UniqueConstraint , BigInteger , Table , Enum as SAEnum
 from sqlalchemy.dialects.postgresql import ENUM
 import uuid
 from enum import Enum

@@ -1,8 +1,8 @@
 from core.packages.controllers import *
 from services.filesmanager import *
-from core.docs.files import Tags
+from core.docs.files import TagsDocs
 
-tags = Tags()
+tags = TagsDocs()
 
 file_router = APIRouter(
     prefix="/files"

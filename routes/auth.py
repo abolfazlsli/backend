@@ -6,7 +6,7 @@ auth_router = APIRouter(
     prefix="/auth"
 )
 
-tags = Tags()
+tags = TagsDocs()
 
 @auth_router.post("/admin/login" , response_model=LoginResponce , tags=[tags.auth ])
 async def admin_login (

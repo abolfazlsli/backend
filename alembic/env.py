@@ -14,6 +14,9 @@ from core.packages.database import Base
 from database.admins import *
 from database.content import *
 from database.filemanager import *
+from database.likes_and_save import *
+from database.category import *
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

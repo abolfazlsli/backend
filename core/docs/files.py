@@ -1,2 +1,2 @@
-class Tags :
+class TagsDocs :
     files = "file-manager"

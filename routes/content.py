@@ -1,8 +1,7 @@
 from core.packages.basic import *
-from core.docs.content import Tags
 from core.packages.controllers import *
 from services.content import *
-
+from core.docs.content import TagsDocs
 
 content_router = APIRouter(
     prefix="/content" 
@@ -10,7 +9,7 @@ content_router = APIRouter(
 
 
 
-tags = Tags()
+tags = TagsDocs()
 
 
 # @content_router.post("" , tags=[tags.content])

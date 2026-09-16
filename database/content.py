@@ -1,6 +1,6 @@
 from core.packages.database import *
 from database.filemanager import FileManager
-
+from database.likes_and_save import SaveEntry
 class TypeOfEnum (str,Enum) :
     STR = "str"
     INT = "int"
@@ -114,8 +114,13 @@ class Entries(ByCompanyAndCreator):
     company = relationship("Company", back_populates="entries")
     creator = relationship("Partner")
     data = relationship("EntryData", back_populates="entry")
-    categorys = relationship("Category" , secondary="entry_category")
+    categorys = relationship("Category" , secondary="entry_category" , back_populates="entries")
     saved_by = relationship("Partner" , secondary="saves" , back_populates="saved_entries")
+    tags = relationship(
+            "Tags",
+            secondary="tags_entry",
+            back_populates="entries"
+        )
 
 
 

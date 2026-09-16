@@ -1,4 +1,4 @@
-class Tags :
+class TagsDocs :
     filds = "content - filds"
     istance = "content - instance"
     entries = "content - entries"

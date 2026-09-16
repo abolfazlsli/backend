@@ -472,6 +472,13 @@ async def createEntry(
     if data.price and data.entry_type == "paid" :
         entry.price = data.price
         entry.acsess_id = generate_public_id()
+
+    if data.categorys :
+        categories = db.query(Category).filter(
+            Category.public_id.in_(data.categorys)
+        ).all()
+        entry.categorys.extend(categories)
+
     db.commit()
     return OkRes(
         {

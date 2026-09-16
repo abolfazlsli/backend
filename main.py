@@ -6,7 +6,7 @@ from routes.auth import auth_router
 from routes.content import content_router
 from routes.users import users_router
 from routes.filemanager import file_router
-
+from routes.categorys import category_router
 app = FastAPI(
     docs_url=settings.setting.docs_url ,
     redoc_url=settings.setting.redocx_url ,
@@ -57,6 +57,8 @@ async def healthCheck () :
 app.include_router(router=admin_router)
 app.include_router(router=content_router)
 app.include_router(router=users_router)
+app.include_router(router=category_router)
+
 
 app.include_router(router=file_router)
 app.include_router(router=auth_router)
