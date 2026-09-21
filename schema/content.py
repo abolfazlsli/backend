@@ -1,7 +1,7 @@
 from core.packages.schema import *
 from database.content import TypeOfEnum
 from schema.admin import CompanyOut
-
+from schema.admin import PartnerOutPublicWithNoCreator
 class Option (BaseModel) :
     label : str
     value : str 
@@ -151,7 +151,7 @@ class EntryOut(ResponceModel , ById) :
     instance : SingleInstanceOut
     categorys : List[CategoryDto]
     data : List["EntryDataOut"]
-
+    creator : PartnerOutPublicWithNoCreator
 
 
 class EntryOutWithOutInstance(ResponceModel , ById) :

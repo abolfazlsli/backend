@@ -25,25 +25,27 @@ class EntryLike(BasicTabales):
     )
 
 
-class SaveEntry (BasicTabales) : 
-    __tablename__ = "saves"
+SaveEntry = Table(
+    "saves",
+    Base.metadata,
 
-    user_id = Column(
-            Integer,
-            ForeignKey("partners.id"),
-            nullable=False
-        )
-    
-    entry_id = Column(
-            Integer,
-            ForeignKey("entries.id"),
-            nullable=False
-        )
-    
-    __table_args__ = (
-            UniqueConstraint(
-                "user_id",
-                "entry_id",
-                name="uq_user_entry_save"
-            ),
-        )
+    Column(
+        "user_id",
+        Integer,
+        ForeignKey("partners.id"),
+        nullable=False
+    ),
+
+    Column(
+        "entry_id",
+        Integer,
+        ForeignKey("entries.id"),
+        nullable=False
+    ),
+
+    UniqueConstraint(
+        "user_id",
+        "entry_id",
+        name="uq_user_entry_save"
+    ),
+)

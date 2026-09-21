@@ -6,7 +6,12 @@ class GroupCategory(BasicTabales):
 
     name = Column(String, nullable=False)
     caption = Column(String, nullable=True)
+    color = Column(String , nullable=False)
+    icon_id = Column(Integer , ForeignKey("file_manager.id") , nullable=True)
 
+    icon = relationship(
+        "FileManager"
+    )
     categories = relationship(
         "Category",
         back_populates="group"
@@ -18,13 +23,17 @@ class Category(BasicTabales):
 
     name = Column(String, nullable=False)
     caption = Column(String, nullable=True)
-
+    icon_id = Column(Integer , ForeignKey("file_manager.id") , nullable=True)
+    color = Column(String, nullable=False)
     group_id = Column(
         Integer,
         ForeignKey("group_category.id"),
         nullable=True
     )
 
+    icon = relationship(
+        "FileManager"
+    )
     group = relationship(
         "GroupCategory",
         back_populates="categories"

@@ -2,17 +2,27 @@ from core.packages.services import *
 from schema.categorys import *
 from database.category import *
 from database.content import Entries
-
+from database.filemanager import FileManager
 
 async def createCategory (
         db : Session ,
         admin : Admin , 
         data : AddCategory
 ) :
+    errors = []
     category = Category(
             name = data.name , 
             caption = data.caption ,
+            color = data.color
         )
+    if data.icon_id :
+        icon_file = db.query(FileManager).filter(
+            FileManager.public_id == data.icon_id
+        ).one_or_none()
+        if not icon_file :
+            errors.append("file not found")
+        else :
+            category.icon_id = icon_file.id
     db.add(category)
     db.flush()
     if data.group_id :
@@ -21,7 +31,8 @@ async def createCategory (
     db.commit()
     return OkRes(
         {
-            "result" : "category added"
+            "result" : "category added" , 
+            "warrnings" : errors
         }
     )
 
@@ -32,12 +43,22 @@ async def createCategoryGroup(
         admin : Admin ,
         data : AddCategoryGroup
 ) :
+    errors = []
     gruop_category = GroupCategory(
         name = data.name , 
         caption = data.caption ,
+        color = data.color ,
     )
     db.add(gruop_category)
     db.flush()
+    if data.icon_id :
+        icon_file = db.query(FileManager).filter(
+                    FileManager.public_id == data.icon_id
+                ).one_or_none()
+        if not icon_file :
+            errors.append("file not found")
+        else :
+            gruop_category.icon_id = icon_file.id
     if data.categorys_id :
         categorys = db.query(Category).filter(
             Category.public_id.in_(data.categorys_id)
@@ -48,7 +69,16 @@ async def createCategoryGroup(
             category = Category(
                 name = i.name ,
                 caption = i.caption ,
+                color = i.color
             )
+            if i.icon_id :
+                icon_file_c = db.query(FileManager).filter(
+                        FileManager.public_id == i.icon_id
+                    ).one_or_none()
+                if not icon_file_c :
+                    errors.append(f"file not found, File id : {i.icon_id}")
+                else :
+                    category.icon_id = icon_file_c.id
             gruop_category.categories.append(category)
     db.commit()
     return OkRes(
@@ -65,9 +95,6 @@ async def getCategorysEntries(
     query = (
         db.query(Entries)
         .join(Entries.categorys)
-        .filter(
-            Category.public_id.in_(filters.category)
-        )
         .distinct()
     )
 
@@ -78,6 +105,10 @@ async def getCategorysEntries(
                 "result" : "no data found"
             }
         )
+    if filters.category :
+        query.filter(
+            Category.public_id.in_(filters.category)
+            )
     entries = (
         query
         .offset(filters.offset)
@@ -120,4 +151,20 @@ async def getCategories(
     return {
         "result": entries,
         "total": total
+    }
+
+
+async def getGroupCategories (
+        db : Session , 
+        querySize : GetDataQuerySize
+) :
+    group_categories = db.query(GroupCategory)
+    total = group_categories.count()
+    result = (group_categories
+    .offset(querySize.offset)
+    .limit(querySize.size)
+    .all())
+    return {
+        "result" : result , 
+        "total" : total
     }

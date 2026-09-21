@@ -115,7 +115,11 @@ class Entries(ByCompanyAndCreator):
     creator = relationship("Partner")
     data = relationship("EntryData", back_populates="entry")
     categorys = relationship("Category" , secondary="entry_category" , back_populates="entries")
-    saved_by = relationship("Partner" , secondary="saves" , back_populates="saved_entries")
+    saved_by = relationship(
+    "Partner",
+    secondary=SaveEntry,
+    back_populates="saved_entries"
+)
     tags = relationship(
             "Tags",
             secondary="tags_entry",

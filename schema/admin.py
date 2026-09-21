@@ -111,6 +111,15 @@ class PartnerOutPublic (ResponceModel , ById) :
     creator : Optional[PartnerBaseicOut] = None
     created_partners : Optional[List[PartnerBaseicOut]] = None
 
+
+class PartnerOutPublicWithNoCreator (ResponceModel , ById) :
+    name : str
+    username : str
+    phone : str
+    role : Optional[RoleOut] = None
+    created_partners : Optional[List[PartnerBaseicOut]] = None
+
+
 class PartnerOut (ResponceModel) :
     name : str
     username : str

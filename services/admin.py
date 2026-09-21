@@ -121,9 +121,9 @@ async def getRoles (
         user : Admin ,
         querySize : GetDataQuerySize
 ) :
-    roles = db.query(Role).filter(not_(Role.id == 1))
+    roles = db.query(Role)
     if isinstance(user , Partner) :
-        roles = roles.filter(or_(Role.company_id == user.company_id , Role.company_id.is_(None)))
+        roles = roles.filter(or_(Role.company_id == user.company_id , Role.company_id.is_(None)) , not_(Role.id == 1))
     return {
         "result" : roles
         .order_by(Role.id.asc())
@@ -571,7 +571,7 @@ async def getAllCompanys (
         admin : Admin , 
         querySize : GetDataQuerySize
 ) :
-    companys = db.query(Company).filter(not_(Company.id == 1))
+    companys = db.query(Company)
 
     return {
         "result" : companys

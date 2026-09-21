@@ -1,6 +1,7 @@
 from core.packages.database import *
 from .basedb import *
-
+from database.likes_and_save import SaveEntry
+from database.category import partner_category_locked
 
 
 
@@ -59,10 +60,12 @@ class Partner (BasicTabales , ContactInfoMixin) :
     )
 
     saved_entries = relationship(
-        "Entries" , secondary="saves" , back_populates="saved_by"
+        "Entries",
+        secondary=SaveEntry,
+        back_populates="saved_by"
     )
     acsess_keys = relationship("PartnerAcsessKeys" , back_populates="partner")
-    categorys = relationship("Category" , secondary="partner_category_lockd")
+    categorys = relationship("Category" , secondary=partner_category_locked)
 
 
 class PartnerBanLog(BasicTabales):

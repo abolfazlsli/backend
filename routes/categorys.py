@@ -36,6 +36,13 @@ async def get_category_list (
     return await getCategories(db , querySize)
 
 
+@category_router.get("/group-categories" , tags=[tags.categories] , response_model=GetGroupCategoriesRes)
+async def get_group_categories (
+    db : Annotated[Session , Depends(get_db)] ,
+    querySize : Annotated[GetDataQuerySize , Query()]
+) :
+    return await getGroupCategories(db , querySize)
+
 
 @category_router.get("/categorys/entries" , 
                      tags=[tags.categories] ,
