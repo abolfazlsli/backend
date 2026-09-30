@@ -24,9 +24,17 @@ async def login_user (
     return await loginUser(db , data)
 
 
+@users_router.post("/role-up" , tags=[Tags.roles])
+async def role_up (
+    db : Annotated[Session , Depends(get_db)] ,
+    usersAdmin : Annotated[Partner , Depends(require_user_by_role("admin"))]
+) :
+    return
+
+
 @users_router.get("/profile" , tags=[Tags.logins])
 async def get_user_profile (
     db : Annotated[Session , Depends(get_db)] ,
-    user : Annotated[Partner , Depends(require_user)]
+    user : Annotated[Partner , Depends(require_user_by_role("admin" , "managers" , "students"))]
 ) :
     return await getProfile(db , user)

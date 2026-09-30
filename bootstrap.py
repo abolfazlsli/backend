@@ -66,14 +66,17 @@ def insert_premissions () :
                 "authorizations" : head_token
             }
         )
-        if per.status_code :
+        if per.status_code >= 200 and per.status_code < 300 :
             print(premission , head_token , "added")
+        else :
+            print(per.status_code)
     return
 
 
 def create_user_role():
     role = Role(
         name = "کاربر" ,
+        keyName = "students" ,
         caption = "این نقش برای کاربرانی استفاده میشود که در سیستم ثبتنام میکنند " ,
         company_id = 1
     )
@@ -81,9 +84,33 @@ def create_user_role():
     db.commit()
     return "done"
 
+def create_teachers_role() :
+    role = Role(
+            name = "معلم" ,
+            keyName = "managers" ,
+            caption = "این نقش برای کاربرانی استفاده میشود که در سیستم ثبتنام میکنند " ,
+            company_id = 1
+        )
+    db.add(role)
+    db.commit()
+    return "done"
 
-create_admin("admin" , "admin" , "09" ,"admin")
-create_users_zone()
-create_user_role()
-create_teachers_zone()
-insert_premissions()
+
+def create_userzone_admin_role() :
+    role = Role(
+            name = "مدیریت کاربران" ,
+            keyName = "admin" ,
+            caption = "این نقش برای کاربرانی استفاده میشود که در سیستم ثبتنام میکنند " ,
+            company_id = 1
+        )
+    db.add(role)
+    db.commit()
+    return "done"
+
+# create_admin("admin" , "admin" , "09" ,"admin")
+create_userzone_admin_role()
+# insert_premissions()
+# create_users_zone()
+# create_user_role()
+# create_teachers_role()
+# create_teachers_zone()

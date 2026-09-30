@@ -3,10 +3,11 @@ from typing import Callable, Union
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from core.security.secure import decode_access_token, security_scheme
 from core.packages.database import get_db
-from database.admins import Admin, Partner
+from database.admins import Admin, Partner , Role
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -218,12 +219,46 @@ def require_user(
     if partner_id is None:
         raise credentials_exception
 
-    partner = db.query(Partner).filter(Partner.public_id == str(partner_id) , Partner.status == "active" , Partner.company_id == 1 , Partner.role_id == 1).first()
+    partner = db.query(Partner).filter(Partner.public_id == str(partner_id) , Partner.status == "active" , Partner.company_id == 1 , Partner.role.has(
+        or_(
+            Role.keyName == "students" ,
+            Role.keyName == "managers" ,
+            Role.keyName == "admin"
+        )
+    )).first()
     if partner is None:
         raise credentials_exception
 
     return partner
 
+def require_user_by_role(*role_names : str):
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+        db: Session = Depends(get_db)
+    ):
+        token = credentials.credentials
+
+        payload = decode_access_token(token)
+        if payload is None:
+            raise credentials_exception
+
+        partner_id = payload.get("sub")
+        if partner_id is None:
+            raise credentials_exception
+
+        partner = db.query(Partner).filter(
+            Partner.public_id == str(partner_id),
+            Partner.status == "active",
+            Partner.company_id == 1,
+            Partner.role.has(Role.keyName.in_(role_names))
+        ).first()
+
+        if partner is None:
+            raise credentials_exception
+
+        return partner
+
+    return dependency
 
 
 def require_partner_permission(permission_code: str) -> Callable:

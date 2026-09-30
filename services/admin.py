@@ -422,7 +422,7 @@ async def setRoleForPartner (
     partner = None
     if isinstance(user , Admin) :
         partner = db.query(Partner).filter(
-            Partner.public_id == data.partner_id , not_(Partner.company_id == 1)
+            Partner.public_id == data.partner_id
         ).one_or_none()
     elif isinstance(user , Partner) :
         partnercheck = db.query(Partner).filter(
@@ -463,9 +463,10 @@ async def getPartners (
        user : Union[Admin , Partner] ,
        querySize : GetDataQuerySize
 ) :
-    partners = db.query(Partner).filter(not_(Partner.company_id == 1))
+    partners = db.query(Partner)
     if isinstance(user , Partner) :
         partners = partners.filter(Partner.company_id == user.company_id)
+        # .filter(not_(Partner.company_id == 1))
     return {
         "result" : partners
         .order_by(Partner.id.asc())

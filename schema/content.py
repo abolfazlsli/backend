@@ -108,7 +108,7 @@ class InstanceFildsOut (ResponceModel) :
 
 class InstanceOut (ResponceModel , ById) :
     name : str
-    caption : str
+    caption : Optional[str] = None
 
     # instance_filds : Optional[List[InstanceFildsOut]] = []
 
@@ -122,7 +122,7 @@ class SingleInstanceOut (ResponceModel , ById) :
 
 
 class InstanceResponce (ResponceModel) :
-    result : List[InstanceOut] = [] 
+    result : List[InstanceOut]
     total : int = 0
 
 
@@ -130,7 +130,7 @@ class InstanceResponce (ResponceModel) :
 class SingleInstanceOutForInstanceFilds (ResponceModel) :
     id : str 
     name : str
-    caption : str
+    caption : Optional[str] = None
 
 class SingleInstanceFildsRes (ResponceModel) :
     instance : Optional[SingleInstanceOutForInstanceFilds] = None

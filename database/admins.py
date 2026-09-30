@@ -29,6 +29,7 @@ class PremisionRole (BasicTabales) :
 class Role (BasicTabales) :
     __tablename__ = "roles"
     name = Column(String , nullable=False)
+    keyName = Column(String)
     caption = Column(String)
     partner_creator_id = Column(Integer, nullable=True)
     company_id = Column(Integer, ForeignKey("companys.id") , nullable=True)
