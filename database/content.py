@@ -167,3 +167,14 @@ class EntryData(ByCompanyAndCreator):
             TypeOfEnum.BOOL: self.value_bool,
         }
         return mapping.get(self.fild.type_of)
+
+    @property
+    def label(self):
+        if self.fild.type_of == TypeOfEnum.SELECT:
+            opt = self.selected_options[0] if self.selected_options else None
+            return opt.label if opt else None
+        if self.fild.type_of == TypeOfEnum.MULTISELECT:
+            return [o.label for o in self.selected_options]
+        if self.fild.type_of == TypeOfEnum.FILE:
+            return self.file.file_name if self.file else None
+        return self.value

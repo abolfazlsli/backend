@@ -102,3 +102,17 @@ class Company(BasicTabales) :
     filds = relationship("Filds" , back_populates="company")
     instances = relationship("Instances" , back_populates="company")
     entries = relationship("Entries", back_populates="company") 
+
+
+class RoleRequest(BasicTabales):
+    __tablename__ = "role_requests"
+
+    partner_id = Column(Integer, ForeignKey("partners.id"), nullable=False)
+    role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
+    status = Column(String, nullable=False, default="pendding")
+    message = Column(String, nullable=True)
+    reviewed_by_id = Column(Integer, ForeignKey("partners.id"), nullable=True)
+
+    partner = relationship("Partner", foreign_keys=[partner_id])
+    role = relationship("Role")
+    reviewed_by = relationship("Partner", foreign_keys=[reviewed_by_id])

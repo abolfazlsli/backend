@@ -1,5 +1,5 @@
 from core.packages.database import *
-from database.admins import Admin , Company , Role
+from database.admins import Admin , Company , Role , Premisions
 from database.content import Entries
 import json , requests
 
@@ -107,8 +107,29 @@ def create_userzone_admin_role() :
     db.commit()
     return "done"
 
+
+CONTENT_PERMISSIONS = [
+    "filds.get" , "filds.create" , "filds.edit" ,
+    "instance.create" , "instance.get" , "instance.edit" ,
+    "entry.create" , "entry.get" , "data.create" ,
+]
+
+def assign_permissions_to_role(key_name : str , codes : list[str]) :
+    role = db.query(Role).filter(Role.keyName == key_name).one_or_none()
+    if not role :
+        return f"role {key_name} not found"
+    premissions = db.query(Premisions).filter(Premisions.code.in_(codes)).all()
+    for premission in premissions :
+        if premission not in role.permissions :
+            role.permissions.append(premission)
+    db.commit()
+    return "done"
+
+
 # create_admin("admin" , "admin" , "09" ,"admin")
-create_userzone_admin_role()
+# create_userzone_admin_role()
+# assign_permissions_to_role("managers" , CONTENT_PERMISSIONS)
+# assign_permissions_to_role("admin" , CONTENT_PERMISSIONS)
 # insert_premissions()
 # create_users_zone()
 # create_user_role()

@@ -332,6 +332,12 @@ async def createPartner(
         role = db.query(Role).filter(
             Role.public_id == data.role_id
         ).one_or_none()
+        if not role :
+            return NotFoundRes(
+                {
+                    "result" : "role not found"
+                }
+            )
         partner.role_id = role.id
     db.add(partner)
     db.commit()
@@ -372,7 +378,10 @@ async def banPartner(
     id: str,
     data: BanPartnerMessage,
 ):
-    partner = db.query(Partner).filter(Partner.public_id == id , Partner.company_id == user.company_id).one_or_none()
+    partner = db.query(Partner).filter(Partner.public_id == id)
+    if isinstance(user , Partner) :
+        partner = partner.filter(Partner.company_id == user.company_id)
+    partner = partner.one_or_none()
     if partner is None:
         return NotFoundRes({"result": "partner not found"})
 
@@ -485,6 +494,7 @@ async def getPartnerById (
     partners = db.query(Partner).filter(Partner.public_id == id)
     if isinstance(user , Partner) :
         partners = partners.filter(Partner.company_id == user.company_id)
+    partners = partners.one_or_none()
     if not partners :
         return NotFoundRes(
             {
@@ -492,7 +502,7 @@ async def getPartnerById (
             }
         )
     return {
-        "result" : PartnerOutPublic.model_validate(partners.one_or_none()).model_dump()
+        "result" : PartnerOutPublic.model_validate(partners).model_dump()
     }
 
 
@@ -514,6 +524,12 @@ async def removeRole(
         id : str
 ) :
     role = db.query(Role).filter(Role.public_id == id).first()
+    if not role :
+        return NotFoundRes(
+            {
+                "result" : "role not found"
+            }
+        )
     partners = db.query(Partner).filter(
             Partner.role_id == role.id
         ).all()

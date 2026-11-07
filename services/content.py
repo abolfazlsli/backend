@@ -67,9 +67,10 @@ async def editFilds (
     update_if_not_none(fild , data , ['name'])
     if data.options :
         fild.options = []
+        db.flush()
         for i in data.options :
             db.add(
-                FildOptions(fild_id = fild.id , value = i.value , label = i.label , order = i.order)
+                FildOptions(fild_id = fild.id , value = i.value , label = i.label , order = i.order , company_id = partner.company_id , creator_id = partner.id)
             )
     db.commit()
 
@@ -122,7 +123,10 @@ async def getFilds (
         partner : Partner ,
         querySize : GetDataQuerySize
 ) :
-    filds = db.query(Filds)
+    filds = db.query(Filds).filter(
+        Filds.company_id == partner.company_id ,
+        Filds.status == StatusEnum.ACTIVE
+    )
     total = filds.count()
     
     return {
@@ -208,7 +212,9 @@ async def addFildOptionToFild (
                 fild_id = fild.id ,
                 value = fildoption.value ,
                 label = fildoption.label ,
-                order = fildoption.order
+                order = fildoption.order ,
+                company_id = partner.company_id ,
+                creator_id = partner.id
             )
         )
     db.commit()
@@ -235,12 +241,21 @@ async def editInstance(
         )
     update_if_not_none(instance , data , ['name' , "caption"])
     if data.filds_id :
-        filds = db.query(Filds).filter(Instances.public_id.in_(data.filds_id))
+        exists_ids = {i.fild_id for i in instance.instance_filds}
+        filds = db.query(Filds).filter(
+            Filds.public_id.in_(data.filds_id) ,
+            Filds.company_id == partner.company_id ,
+            Filds.status == StatusEnum.ACTIVE
+        )
         for i in filds.all():
+            if i.id in exists_ids :
+                continue
             db.add(
                 InstanceFilds(
                     instance_id = instance.id ,
-                    fild_id = i.id
+                    fild_id = i.id ,
+                    company_id = partner.company_id ,
+                    creator_id = partner.id
                     )
             )
     db.commit()
@@ -338,7 +353,7 @@ async def archiveFilds (
                 "result" : "no data found"
             }
         )
-    fild.status == StatusEnum.DISACTIVE
+    fild.status = StatusEnum.DISACTIVE
     db.commit()
 
     return OkRes(
@@ -363,12 +378,12 @@ async def unarchiveFilds (
                 "result" : "no data found"
             }
         )
-    fild.status == StatusEnum.ACTIVE
+    fild.status = StatusEnum.ACTIVE
     db.commit()
 
     return OkRes(
         {
-            "result" : "fild archived"
+            "result" : "fild unarchived"
         }
     )
 
@@ -456,20 +471,27 @@ async def createEntry(
         Instances.company_id == partner.company_id ,
         Instances.status == StatusEnum.ACTIVE
     ).one_or_none()
+    if not instance :
+        return NotFoundRes(
+            {
+                "result" : "no instance found"
+            }
+        )
+    if data.entry_type == PricingEnum.PRICING and not data.price :
+        return BadRequestRes(
+            {
+                "result" : "price is required for paid entries"
+            }
+        )
     entry = Entries(
         instance_id = instance.id ,
         company_id = partner.company_id ,
         creator_id = partner.id
     )
-    if data.categorys :
-        categorys = db.query(Category).filter(
-            Category.public_id.in_(data.categorys)
-        ).all()
-        entry.categorys.extend(categorys)
     db.add(entry)
     if data.entry_type :
         entry.entry_type = data.entry_type
-    if data.price and data.entry_type == "paid" :
+    if data.price and data.entry_type == PricingEnum.PRICING :
         entry.price = data.price
         entry.acsess_id = generate_public_id()
 
@@ -528,15 +550,17 @@ async def getInstanceFilds (
 async def getEntrys (
         db : Session ,
         partner : Partner ,
-        querySize : GetDataQuerySize
+        querySize : MyEntriesFilter
 ) :
     entrys = db.query(Entries).filter(
         Entries.company_id == partner.company_id ,
         Entries.creator_id == partner.id ,
-        or_(Entries.status == StatusEnum.PENDDING , Entries.status == StatusEnum.ACTIVE)
     )
+    if querySize.status :
+        entrys = entrys.filter(Entries.status == querySize.status)
     return {
         "result" : entrys
+        .order_by(Entries.id.desc())
         .offset(querySize.offset)
         .limit(querySize.size)
         .all() ,
@@ -635,6 +659,33 @@ async def createEntryData(
     }
 
     # ---------------------------------
+    # Validate placements
+    # ---------------------------------
+    # عنوان / کپشن / بج / بنر فقط یک بار ؛ بنر فقط فیلد فایل
+
+    unique_placements = ("title" , "caption" , "badge" , "banner")
+    for placement in unique_placements :
+        if sum(1 for item in data.filds if item.data.placement == placement) > 1 :
+            errors.append({
+                "fild_id": None,
+                "result": f"placement {placement} must be unique"
+            })
+
+    for item in data.filds :
+        field = fields_map.get(item.fild_id)
+        if field and item.data.placement == "banner" and field.type_of != TypeOfEnum.FILE :
+            errors.append({
+                "fild_id": item.fild_id,
+                "result": "banner placement needs a file field"
+            })
+
+    if errors :
+        return BadRequestRes({
+            "result": "validation error",
+            "errors": errors
+        })
+
+    # ---------------------------------
     # Validate fields
     # ---------------------------------
 
@@ -670,6 +721,8 @@ async def createEntryData(
         # -----------------------------
         # Create EntryData
         # -----------------------------
+
+        option_ids = []
 
         entrydata = EntryData(
             company_id=partner.company_id,
@@ -742,7 +795,7 @@ async def createEntryData(
                 })
                 continue
 
-            entrydata.selected_options.append(option)
+            option_ids = [option.id]
 
         # -----------------------------
         # MULTISELECT
@@ -768,7 +821,7 @@ async def createEntryData(
                 })
                 continue
 
-            entrydata.selected_options.extend(options)
+            option_ids = [option.id for option in options]
 
         else:
 
@@ -780,6 +833,18 @@ async def createEntryData(
 
         db.add(entrydata)
 
+        if option_ids :
+            db.flush()
+            for option_id in option_ids :
+                db.add(
+                    EntryDataOptions(
+                        entry_data_id=entrydata.id,
+                        fild_option_id=option_id,
+                        company_id=partner.company_id,
+                        creator_id=partner.id,
+                    )
+                )
+
     # ---------------------------------
     # Rollback if validation failed
     # ---------------------------------
@@ -787,10 +852,10 @@ async def createEntryData(
     if errors:
         db.rollback()
 
-        return {
+        return BadRequestRes({
             "result": "validation error",
             "errors": errors
-        }
+        })
 
     # ---------------------------------
     # Commit
@@ -828,3 +893,51 @@ async def getEntryDataList(
         "result": items,
         "total": total,
     }
+
+
+async def getEntrysSummary (
+        db : Session ,
+        partner : Partner
+) :
+    """
+    خلاصه محتواهای کاربر برای داشبورد : تعداد بر اساس وضعیت + تعداد ذخیره و لایک
+    """
+    from database.likes_and_save import SaveEntry
+
+    rows = (
+        db.query(Entries.status , func.count(Entries.id))
+        .filter(
+            Entries.company_id == partner.company_id ,
+            Entries.creator_id == partner.id
+        )
+        .group_by(Entries.status)
+        .all()
+    )
+    by_status = {status : count for status , count in rows}
+
+    saves = (
+        db.query(func.count())
+        .select_from(SaveEntry)
+        .join(Entries , Entries.id == SaveEntry.c.entry_id)
+        .filter(Entries.creator_id == partner.id)
+        .scalar()
+    ) or 0
+
+    likes = (
+        db.query(func.coalesce(func.sum(Entries.like_count) , 0))
+        .filter(Entries.creator_id == partner.id)
+        .scalar()
+    ) or 0
+
+    return OkRes(
+        {
+            "result" : {
+                "total" : sum(by_status.values()) ,
+                "pendding" : by_status.get(StatusEnum.PENDDING.value , 0) ,
+                "active" : by_status.get(StatusEnum.ACTIVE.value , 0) ,
+                "disactive" : by_status.get(StatusEnum.DISACTIVE.value , 0) ,
+                "saves" : int(saves) ,
+                "likes" : int(likes)
+            }
+        }
+    )

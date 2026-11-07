@@ -86,7 +86,7 @@ async def archive_filds (
 @content_router.delete("/fildsoption" , tags=[tags.filds])
 async def delete_fildoption (
     db : Annotated[Session , Depends(get_db)] ,
-    partner : Annotated[Partner , Depends(require_partner_permission("fild.edit"))] ,
+    partner : Annotated[Partner , Depends(require_partner_permission("filds.edit"))] ,
     data : Annotated[RemoveOptionDto , Body()]
 ) :
     return await removeOptionFromFild(db , partner , data)
@@ -198,9 +198,17 @@ async def create_entry (
 async def get_entrys(
     db : Annotated[Session , Depends(get_db)] ,
     partner : Annotated[Partner , Depends(require_partner_permission("entry.get"))] ,
-    querySize : Annotated[GetDataQuerySize , Query()]
+    querySize : Annotated[MyEntriesFilter , Query()]
 ) :
     return await getEntrys(db , partner , querySize)
+
+
+@content_router.get("/entry/summary" , tags=[tags.entries])
+async def get_entrys_summary(
+    db : Annotated[Session , Depends(get_db)] ,
+    partner : Annotated[Partner , Depends(require_partner_permission("entry.get"))]
+) :
+    return await getEntrysSummary(db , partner)
 
 
 

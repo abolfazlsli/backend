@@ -1,4 +1,5 @@
 from core.packages.schema import *
+from datetime import datetime
 from database.content import TypeOfEnum
 from schema.admin import CompanyOut
 from schema.admin import PartnerOutPublicWithNoCreator
@@ -42,15 +43,19 @@ class EditInstanceDto (BaseModel) :
     name : Optional[str] = None
     caption : Optional[str] = None
 
-    filds_id : Optional[List[str]]
+    filds_id : Optional[List[str]] = None
 
 
+
+
+class MyEntriesFilter (GetDataQuerySize) :
+    status : Optional[Literal["pendding" , "active" , "disactive"]] = None
 
 
 class CreateEntryDto (BaseModel) :
     instance_id : str
-    price : Optional[int] = 0
-    entry_type : Optional[str] = "free"
+    price : Optional[int] = Field(default=0 , ge=0)
+    entry_type : Optional[Literal["free" , "free_users" , "paid"]] = "free"
     categorys : Optional[List[str]] = None
 
 
@@ -75,10 +80,11 @@ class CreateEnteryData (BaseModel) :
 
 
 
-class OptionsOut (ResponceModel) :
+class OptionsOut (ResponceModel , ById) :
     value : str = None
     label : str = None
     order : int = None
+    is_active : Optional[bool] = True
 
 class FildsOut(ResponceModel , ById) :
     name : str
@@ -101,8 +107,8 @@ class FildsResponce(ResponceModel) :
 
 
 class InstanceFildsOut (ResponceModel) :
-    order : int
-    required : bool
+    order : Optional[int] = 0
+    required : Optional[bool] = False
 
     fild : FildOutPublic = None
 
@@ -116,7 +122,7 @@ class InstanceOut (ResponceModel , ById) :
 
 class SingleInstanceOut (ResponceModel , ById) :
     name : str
-    caption : str
+    caption : Optional[str] = None
 
     instance_filds : List[InstanceFildsOut] = []
 
@@ -140,17 +146,36 @@ class SingleInstanceFildsOut (ResponceModel) :
     result : SingleInstanceFildsRes 
 
 
+class CategoryGroupMiniDto (ResponceModel , ById) :
+    name : str
+    kind : Optional[str] = None
+
+
 class CategoryDto (ResponceModel , ById) :
     name : str
+    group : Optional[CategoryGroupMiniDto] = None
+
+
+class EntryDataPublicOut (ResponceModel) :
+    placement : str
+    value : Any = None
+    label : Any = None
+    fild : FildOutPublic
+
+
+class CreatorPublicOut (ResponceModel) :
+    name : Optional[str] = None
 
 
 class EntryOut(ResponceModel , ById) :
     status : str
     entry_type : str
     price : Optional[int] = None
+    like_count : Optional[int] = 0
+    create_at : Optional[datetime] = None
     instance : SingleInstanceOut
     categorys : List[CategoryDto]
-    data : List["EntryDataOut"]
+    data : List[EntryDataPublicOut]
     creator : PartnerOutPublicWithNoCreator
 
 
@@ -158,8 +183,11 @@ class EntryOutWithOutInstance(ResponceModel , ById) :
     status : str
     entry_type : str
     price : Optional[int] = None
+    like_count : Optional[int] = 0
+    create_at : Optional[datetime] = None
     categorys : List[CategoryDto]
-    data : List["EntryDataOut"]
+    data : List[EntryDataPublicOut]
+    creator : Optional[CreatorPublicOut] = None
 
 
 class EntryRes (ResponceModel) :

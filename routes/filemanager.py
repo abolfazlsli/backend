@@ -13,6 +13,7 @@ file_router = APIRouter(
 @file_router.post("/upload" , tags=[tags.files])
 async def upload_file (
     db : Annotated[Session , Depends(get_db)] ,
+    user : Annotated[Union[Admin , Partner] , Depends(get_current_admin_or_partner)] ,
     file : Annotated[UploadFile , File(...)]
 ) :
     # uploaded_file = file

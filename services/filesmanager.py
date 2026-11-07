@@ -1,6 +1,7 @@
 from core.packages.services import *
 from core.utils.dataprocess import validate_uploaded_file
 from database.filemanager import *
+import mimetypes
 
 
 
@@ -41,6 +42,7 @@ async def uploadFiles(
     return {
         "id" : filedb.public_id , 
         "filename" : safefile['safe_name'] ,
+        "orginal_name" : safefile['orginal_name'] ,
         "path" : str(file_path)
     }
 
@@ -69,12 +71,11 @@ async def getFile(
 
     is_image = file.mimetype.lower() in IMAGE_MIME_TYPES
 
+    media_type = mimetypes.guess_type(file.digital_name)[0] or "application/octet-stream"
+
     return FileResponse(
         path=physical_file,
-        media_type=file.mimetype,
-        headers={
-            "Content-Disposition": "inline"
-            if is_image
-            else "attachment"
-        }
+        media_type=media_type,
+        filename=None if is_image else file.file_name,
+        content_disposition_type="inline" if is_image else "attachment",
     )

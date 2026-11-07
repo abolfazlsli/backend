@@ -39,7 +39,7 @@ async def get_category_list (
 @category_router.get("/group-categories" , tags=[tags.categories] , response_model=GetGroupCategoriesRes)
 async def get_group_categories (
     db : Annotated[Session , Depends(get_db)] ,
-    querySize : Annotated[GetDataQuerySize , Query()]
+    querySize : Annotated[GetGroupCategoriesQuery , Query()]
 ) :
     return await getGroupCategories(db , querySize)
 
@@ -53,3 +53,26 @@ async def get_category_entries (
     filters : Annotated[GetCategorysContentBySize , Query()] ,
 ) :
     return await getCategorysEntries(db , filters)
+
+
+@category_router.get("/categorys/entries/{id}" , tags=[tags.categories])
+async def get_public_entry (
+    db : Annotated[Session , Depends(get_db)] ,
+    id : str
+) :
+    return await getPublicEntryById(db , id)
+
+
+@category_router.get("/categorys/counts" , tags=[tags.categories])
+async def get_category_counts (
+    db : Annotated[Session , Depends(get_db)] ,
+    filters : Annotated[GetCategoryCountsQuery , Query()]
+) :
+    return await getCategoryCounts(db , filters)
+
+
+@category_router.get("/stats" , tags=[tags.categories])
+async def get_stats (
+    db : Annotated[Session , Depends(get_db)]
+) :
+    return await getStats(db)

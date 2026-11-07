@@ -3,3 +3,4 @@ premissions.json
 .env.*
 seeds
 uploads
+__pycache__

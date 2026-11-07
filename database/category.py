@@ -8,13 +8,16 @@ class GroupCategory(BasicTabales):
     caption = Column(String, nullable=True)
     color = Column(String , nullable=False)
     icon_id = Column(Integer , ForeignKey("file_manager.id") , nullable=True)
+    # نوع گروه : grade (مقطع ← پایه‌ها) , subject (گروه درسی ← درس‌ها) , type (نوع محتوا)
+    kind = Column(String , nullable=True , index=True)
 
     icon = relationship(
         "FileManager"
     )
     categories = relationship(
         "Category",
-        back_populates="group"
+        back_populates="group",
+        order_by="Category.id"
     )
 
 
