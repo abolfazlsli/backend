@@ -1,137 +1,295 @@
-from core.packages.database import *
-from database.admins import Admin , Company , Role , Premisions
-from database.content import Entries
-import json , requests
 
-db = SeeseionLocal()
+import json
+import requests
 
-def create_admin (
-        name : str ,
-        username : str ,
-        phone : str ,
-        password : str
-) :
+from core.packages.database import SessionLocal
+from database.admins import Admin, Company, Role, Premisions
+
+
+# ---------------------------------------------------------------------
+# Database
+# ---------------------------------------------------------------------
+
+db = SessionLocal()
+
+API_BASE_URL = "http://127.0.0.1:8000"
+
+
+def commit():
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+
+# ---------------------------------------------------------------------
+# Admin
+# ---------------------------------------------------------------------
+
+def create_admin(
+    name: str,
+    username: str,
+    phone: str,
+    password: str,
+):
+    admin = db.query(Admin).filter(
+        (Admin.username == username) |
+        (Admin.phone == phone)
+    ).first()
+
+    if admin:
+        return "admin already exists"
+
     admin = Admin(
-        name = name ,
-        username = username ,
-        phone = phone ,
-        password = password
+        name=name,
+        username=username,
+        phone=phone,
+        password=password,
     )
-        
+
     db.add(admin)
-    db.commit()
+    commit()
+
     return "done"
 
-def create_users_zone () :
-    user_zone = Company(
-        name = "users_zone" ,
-        addres = "یه جای خوب",
-        telphone = "051",
-        creator_id =1
+
+# ---------------------------------------------------------------------
+# Companies / Zones
+# ---------------------------------------------------------------------
+
+ZONES = [
+    {
+        "name": "users_zone",
+        "address": "یه جای خوب",
+        "telephone": "051",
+        "creator_id": 1,
+    },
+    {
+        "name": "teachers_zone",
+        "address": "یه جای خوب",
+        "telephone": "052",
+        "creator_id": 1,
+    },
+]
+
+
+def create_zone(
+    name: str,
+    address: str,
+    telephone: str,
+    creator_id: int,
+):
+    zone = db.query(Company).filter(
+        Company.name == name
+    ).first()
+
+    if zone:
+        return f"{name} already exists"
+
+    zone = Company(
+        name=name,
+        addres=address,
+        telphone=telephone,
+        creator_id=creator_id,
     )
-    db.add(user_zone)
-    db.commit()
-    return "done"
 
-def create_teachers_zone () :
-    user_zone = Company(
-            name = "teachers_zone" ,
-            addres = "یه جای خوب",
-            telphone = "052",
-            creator_id =1
-        )
-    db.add(user_zone)
-    db.commit()
+    db.add(zone)
+    commit()
+
     return "done"
 
 
-def insert_premissions () :
-    premissions_file = open("./seeds/premissions.json" , "rb")
-    premissions = json.loads(premissions_file.read())
+def create_zones():
+    for zone in ZONES:
+        print(create_zone(**zone))
+
+
+# ---------------------------------------------------------------------
+# Roles
+# ---------------------------------------------------------------------
+
+ROLES = [
+    {
+        "name": "کاربر",
+        "keyName": "students",
+        "caption": "این نقش برای کاربرانی استفاده میشود که در سیستم ثبتنام میکنند",
+        "company_id": 1,
+    },
+    {
+        "name": "معلم",
+        "keyName": "managers",
+        "caption": "این نقش برای کاربران معلم استفاده میشود",
+        "company_id": 1,
+    },
+    {
+        "name": "مدیریت کاربران",
+        "keyName": "admin",
+        "caption": "این نقش برای مدیریت کاربران استفاده میشود",
+        "company_id": 1,
+    },
+]
+
+
+def create_role(
+    name: str,
+    keyName: str,
+    caption: str,
+    company_id: int,
+):
+    role = db.query(Role).filter(
+        Role.keyName == keyName
+    ).first()
+
+    if role:
+        return f"{keyName} already exists"
+
+    role = Role(
+        name=name,
+        keyName=keyName,
+        caption=caption,
+        company_id=company_id,
+    )
+
+    db.add(role)
+    commit()
+
+    return "done"
+
+
+def create_roles():
+    for role in ROLES:
+        print(create_role(**role))
+
+
+# ---------------------------------------------------------------------
+# Permissions
+# ---------------------------------------------------------------------
+
+CONTENT_PERMISSIONS = [
+    "filds.get",
+    "filds.create",
+    "filds.edit",
+    "instance.create",
+    "instance.get",
+    "instance.edit",
+    "entry.create",
+    "entry.get",
+    "data.create",
+]
+
+
+def assign_permissions_to_role(
+    key_name: str,
+    codes: list[str],
+):
+    role = db.query(Role).filter(
+        Role.keyName == key_name
+    ).one_or_none()
+
+    if not role:
+        return f"role {key_name} not found"
+
+    permissions = db.query(Premisions).filter(
+        Premisions.code.in_(codes)
+    ).all()
+
+    existing_codes = {
+        permission.code
+        for permission in role.permissions
+    }
+
+    for permission in permissions:
+        if permission.code not in existing_codes:
+            role.permissions.append(permission)
+
+    commit()
+
+    return "done"
+
+
+# ---------------------------------------------------------------------
+# Permission API Seeder
+# ---------------------------------------------------------------------
+
+def insert_permissions(
+    file_path: str = "./seeds/premissions.json",
+):
     admin = db.query(Admin).filter(
         Admin.id == 1
     ).one_or_none()
-    if not admin :
-        return "error user not found"
-    token = requests.post(
-        "http://127.0.0.1:8000/auth/admin/login" , json={
-        "username_or_phone": admin.phone,
-        "password": admin.password
-        })
-    if token.status_code == 200 :
-        head_token = json.loads(token.content)['result']['token']
-    for premission in premissions :
-        per = requests.post(
-            "http://127.0.0.1:8000/admin/permissions" , json=premission , headers={
-                "authorizations" : head_token
-            }
-        )
-        if per.status_code >= 200 and per.status_code < 300 :
-            print(premission , head_token , "added")
-        else :
-            print(per.status_code)
-    return
 
+    if not admin:
+        return "error: admin not found"
 
-def create_user_role():
-    role = Role(
-        name = "کاربر" ,
-        keyName = "students" ,
-        caption = "این نقش برای کاربرانی استفاده میشود که در سیستم ثبتنام میکنند " ,
-        company_id = 1
+    login_response = requests.post(
+        f"{API_BASE_URL}/auth/admin/login",
+        json={
+            "username_or_phone": admin.phone,
+            "password": admin.password,
+        },
+        timeout=15,
     )
-    db.add(role)
-    db.commit()
-    return "done"
 
-def create_teachers_role() :
-    role = Role(
-            name = "معلم" ,
-            keyName = "managers" ,
-            caption = "این نقش برای کاربرانی استفاده میشود که در سیستم ثبتنام میکنند " ,
-            company_id = 1
+    login_response.raise_for_status()
+
+    token = login_response.json()["result"]["token"]
+
+    with open(file_path, "r", encoding="utf-8") as file:
+        permissions = json.load(file)
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+    }
+
+    for permission in permissions:
+        try:
+            response = requests.post(
+                f"{API_BASE_URL}/admin/permissions",
+                json=permission,
+                headers=headers,
+                timeout=15,
+            )
+
+            response.raise_for_status()
+
+            print(permission, "added")
+
+        except requests.RequestException as error:
+            print(permission, "failed:", error)
+
+
+# ---------------------------------------------------------------------
+# Seeder Runner
+# ---------------------------------------------------------------------
+
+def run_seeds():
+    try:
+        create_admin(
+            name="admin",
+            username="admin",
+            phone="09",
+            password="admin",
         )
-    db.add(role)
-    db.commit()
-    return "done"
 
+        create_zones()
+        create_roles()
 
-def create_userzone_admin_role() :
-    role = Role(
-            name = "مدیریت کاربران" ,
-            keyName = "admin" ,
-            caption = "این نقش برای کاربرانی استفاده میشود که در سیستم ثبتنام میکنند " ,
-            company_id = 1
+        assign_permissions_to_role(
+            "managers",
+            CONTENT_PERMISSIONS,
         )
-    db.add(role)
-    db.commit()
-    return "done"
+
+        assign_permissions_to_role(
+            "admin",
+            CONTENT_PERMISSIONS,
+        )
+
+        # insert_permissions()
+
+    finally:
+        db.close()
 
 
-CONTENT_PERMISSIONS = [
-    "filds.get" , "filds.create" , "filds.edit" ,
-    "instance.create" , "instance.get" , "instance.edit" ,
-    "entry.create" , "entry.get" , "data.create" ,
-]
-
-def assign_permissions_to_role(key_name : str , codes : list[str]) :
-    role = db.query(Role).filter(Role.keyName == key_name).one_or_none()
-    if not role :
-        return f"role {key_name} not found"
-    premissions = db.query(Premisions).filter(Premisions.code.in_(codes)).all()
-    for premission in premissions :
-        if premission not in role.permissions :
-            role.permissions.append(premission)
-    db.commit()
-    return "done"
-
-
-# create_admin("admin" , "admin" , "09" ,"admin")
-# create_userzone_admin_role()
-# assign_permissions_to_role("managers" , CONTENT_PERMISSIONS)
-# assign_permissions_to_role("admin" , CONTENT_PERMISSIONS)
-# insert_premissions()
-# create_users_zone()
-# create_user_role()
-# create_teachers_role()
-# create_teachers_zone()
+if __name__ == "__main__":
+    run_seeds()
