@@ -2,17 +2,19 @@
 import json
 import requests
 
-from core.packages.database import SessionLocal
+from core.packages.database import *
 from database.admins import *
+from database.filemanager import *
+from database.content import *
 
 
 # ---------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------
 
-db = SessionLocal()
+db = SeeseionLocal()
 
-API_BASE_URL = "https://core.madresehplus.com/"
+API_BASE_URL = "http://127.0.0.1:8000"
 
 
 def commit():
@@ -259,6 +261,24 @@ def insert_permissions(
             print(permission, "failed:", error)
 
 
+
+def create_paratner () :
+    # create manager 
+    manager_role = db.query(Role).filter(
+        Role.keyName == "admin"
+    ).one_or_none()
+    manager = Partner(
+        name="مدیر کاربران" , 
+        username = "users_manager" , 
+        status = "active" ,
+        phone = "admin",
+        password = "admin" ,
+        role_id = manager_role.id
+    )
+    db.add(manager)
+    db.commit()
+
+
 # ---------------------------------------------------------------------
 # Seeder Runner
 # ---------------------------------------------------------------------
@@ -272,6 +292,7 @@ def run_seeds():
             password="admin",
         )
 
+        insert_permissions()
         create_zones()
         create_roles()
 
@@ -284,8 +305,8 @@ def run_seeds():
             "admin",
             CONTENT_PERMISSIONS,
         )
+        create_paratner()
 
-        # insert_permissions()
 
     finally:
         db.close()
