@@ -1,4 +1,5 @@
 from core.packages.database import *
+from database.filemanager import FileManager
 
 
 class EntryLike(BasicTabales):

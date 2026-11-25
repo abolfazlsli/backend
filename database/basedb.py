@@ -1,4 +1,7 @@
 from core.packages.database import *
+from database.filemanager import FileManager
+
+
 class ContactInfoMixin:
     name = Column(String)
     username = Column(String, unique=True, nullable=False)

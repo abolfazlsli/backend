@@ -4,6 +4,7 @@ import requests
 
 from core.packages.database import SessionLocal
 from database.admins import Admin, Company, Role, Premisions
+from database.filemanager import FileManager
 
 
 # ---------------------------------------------------------------------
