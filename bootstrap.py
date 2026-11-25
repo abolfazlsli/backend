@@ -264,6 +264,9 @@ def insert_permissions(
 
 def create_paratner () :
     # create manager 
+    user_zone = db.query(Company).filter(
+        Company.name == "user_zone"
+    ).one_or_none()
     manager_role = db.query(Role).filter(
         Role.keyName == "admin"
     ).one_or_none()
@@ -273,7 +276,8 @@ def create_paratner () :
         status = "active" ,
         phone = "admin",
         password = "admin" ,
-        role_id = manager_role.id
+        role_id = manager_role.id , 
+        company_id = user_zone.id
     )
     db.add(manager)
     db.commit()
