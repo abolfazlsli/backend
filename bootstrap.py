@@ -3,8 +3,7 @@ import json
 import requests
 
 from core.packages.database import SessionLocal
-from database.admins import Admin, Company, Role, Premisions
-from database.filemanager import FileManager
+from database.admins import *
 
 
 # ---------------------------------------------------------------------
@@ -13,7 +12,7 @@ from database.filemanager import FileManager
 
 db = SessionLocal()
 
-API_BASE_URL = "http://127.0.0.1:8000"
+API_BASE_URL = "https://core.madresehplus.com/"
 
 
 def commit():
